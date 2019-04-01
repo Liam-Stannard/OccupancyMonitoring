@@ -13,7 +13,6 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
-import javax.swing.Timer;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
@@ -50,7 +49,7 @@ public class Interface {
     private JPanel monitorCentrePanel;
     private JPanel monitorCentreLeftPanel;
     private JPanel monitorCentreRightPanel;
-    private Timer timer;
+  
     private int delay = 1000 * 60 * 2;
     private boolean executing = false;
 
@@ -112,6 +111,10 @@ public class Interface {
 		f.add(tabbedPane);
 		f.setSize(800, 600);
 		f.setVisible(true);
+	}
+
+	public PersonStore getPersonStore() {
+		return personStore;
 	}
 
 	/**
