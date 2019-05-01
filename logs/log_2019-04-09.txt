@@ -1,0 +1,83 @@
+09-Apr-2019 22:14:41
+Known: 0 Predicted: 0
+
+09-Apr-2019 22:16:01
+Known: 1 Predicted: 3
+A
+
+09-Apr-2019 22:16:13
+Known: 0 Predicted: 1
+
+09-Apr-2019 22:17:27
+Known: 2 Predicted: 3
+A
+B
+
+09-Apr-2019 22:18:19
+Known: 0 Predicted: 3
+
+09-Apr-2019 22:19:58
+Known: 2 Predicted: 4
+A
+B
+
+09-Apr-2019 22:20:18
+Known: 2 Predicted: 4
+A
+B
+
+09-Apr-2019 22:44:54
+Known: 0 Predicted: 0
+
+09-Apr-2019 23:01:32
+Known: 2 Predicted: 4
+A
+B
+
+09-Apr-2019 23:01:43
+Known: 2 Predicted: 3
+A
+B
+
+09-Apr-2019 23:02:03
+Known: 0 Predicted: 2
+
+09-Apr-2019 23:03:48
+Known: 0 Predicted: 2
+
+09-Apr-2019 23:04:27
+Known: 1 Predicted: 2
+A
+
+09-Apr-2019 23:07:11
+Known: 1 Predicted: 1
+B
+
+09-Apr-2019 23:08:13
+Known: 1 Predicted: 2
+A
+
+09-Apr-2019 23:10:49
+Known: 2 Predicted: 3
+A
+B
+
+09-Apr-2019 23:12:58
+Known: 2 Predicted: 3
+A
+B
+
+09-Apr-2019 23:14:37
+Known: 2 Predicted: 2
+A
+B
+
+09-Apr-2019 23:14:59
+Known: 2 Predicted: 1
+A
+B
+
+09-Apr-2019 23:15:07
+Known: 1 Predicted: 1
+B
+

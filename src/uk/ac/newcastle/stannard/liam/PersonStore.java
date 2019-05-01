@@ -1,8 +1,9 @@
 package uk.ac.newcastle.stannard.liam;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class PersonStore 
+public class PersonStore implements Serializable
 {
 	
 	private ArrayList<Person> personList;
@@ -45,6 +46,15 @@ public class PersonStore
 	public Person getPerson(int index) 
 	{
 		return personList.get(index);
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sBuilder = new StringBuilder();
+		sBuilder.append("People Stored:\n");
+		for(Person p : personList)
+		sBuilder.append(p);
+		return sBuilder.toString();
 	}
 
 }

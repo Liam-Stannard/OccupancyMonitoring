@@ -15,15 +15,10 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-
-
+import javax.swing.*;
 
 /**
- * @author Liam Stannard
- * This is the user interface class which allows for:
- * - The personStore to be manipulated
- * - The monitoring to be stopped and started
- * - The occupancy counts to be displayed
+ * @author  Liam Stannard This is the user interface class which allows for: -The personStore to be manipulated - The monitoring to be stopped and started - The occupancy counts to be displayed
  */
 
 public class Interface {
@@ -31,27 +26,32 @@ public class Interface {
 	private JFrame f;
 	private JTabbedPane tabbedPane;
 	PersonStore personStore;
+	ObjectSerialiser<PersonStore> personSerialiser;
+	private final String routerAddressPath = "res/routerAddress";
+	private final String personStorePath = "res/personStore";
 
 	// monitor panel
-	
-	
-    private JTextField tfStatus;
-    private JPanel monitorPanel;
-    private JTextField tfPredCount;
-    private JTextField tfKnownCount;
-    private JButton b;
-    private JList<String> addrList;
-    private DefaultListModel<String> addrModel = new DefaultListModel<String>();
-    private JList<String> occuList;
-    private DefaultListModel<String> occuModel = new DefaultListModel<String>();
-    private JPanel monitorEastPanel;
-    private JPanel montiorWestPanel;
-    private JPanel monitorCentrePanel;
-    private JPanel monitorCentreLeftPanel;
-    private JPanel monitorCentreRightPanel;
-  
-    private int delay = 1000 * 60 * 2;
-    private boolean executing = false;
+
+	private JTextField tfStatus;
+	private JPanel monitorPanel;
+	private JTextField tfPredCount;
+	private JTextField tfKnownCount;
+	private JButton b;
+	private JList<String> addrList;
+	private DefaultListModel<String> addrModel = new DefaultListModel<String>();
+	private JList<String> occuList;
+	private DefaultListModel<String> occuModel = new DefaultListModel<String>();
+	private JPanel monitorEastPanel;
+	private JPanel montiorWestPanel;
+	private JPanel monitorCentrePanel;
+	private JPanel monitorSouthPanel;
+	private JPanel monitorCentreLeftPanel;
+	private JPanel monitorCentreRightPanel;
+	private JTextField tfrouterAddress;
+	private JButton routerUpdateButton;
+
+	private boolean executing;
+	private String router_mac_address;
 
 	// person panel
 	private JPanel personPanel;
@@ -90,10 +90,17 @@ public class Interface {
 	private JButton editDeletePersonButton;
 	private JButton editDeleteAddressButton;
 	private JButton editUpdateButton;
-
 	
+
 	public Interface() {
-		personStore = new PersonStore();
+		personSerialiser = new ObjectSerialiser<PersonStore>(personStorePath );
+		PersonStore tempStore = personSerialiser.load();
+		if(tempStore != null) {
+			personStore = tempStore;
+		}else {
+			personStore = new PersonStore();
+		}
+		
 		setup();
 	}
 
@@ -104,10 +111,13 @@ public class Interface {
 	private void setup() {
 		f = new JFrame();
 		tabbedPane = new JTabbedPane();
+		ObjectSerialiser<String> oSerialiser = new ObjectSerialiser<String>(routerAddressPath);
+		router_mac_address = oSerialiser.load();
+		
 		setupMonitorPanel();
 		setupAddPersonPanel();
 		setupEditPersonPanel();
-
+		setupCloseFrameListener();
 		f.add(tabbedPane);
 		f.setSize(800, 600);
 		f.setVisible(true);
@@ -120,94 +130,95 @@ public class Interface {
 	/**
 	 * Sets up the monitor panel which is the parent component for the monitor tab
 	 */
-	private void setupMonitorPanel() 
-    {
-        b = new JButton("Start");  
-        monitorPanel = new JPanel(); 
-        tfStatus= new JTextField();  
-        tfPredCount = new JTextField();
-        tfKnownCount = new JTextField();
-        addrList = new JList<>();  
-        occuList = new JList<>(); 
-        monitorEastPanel = new JPanel(new BorderLayout());
-        montiorWestPanel = new JPanel(new BorderLayout());
-        monitorCentrePanel = new JPanel();
-        monitorCentreLeftPanel = new JPanel(new BorderLayout());
-        monitorCentreRightPanel = new JPanel(new BorderLayout());
-        
-        monitorCentrePanel.add(monitorCentreLeftPanel);
-        monitorCentrePanel.add(monitorCentreRightPanel);
-        
-        tfPredCount.setBounds(0,0,50,50);
-        tfKnownCount.setBounds(0,0,50,50);
-        addrList.setBounds(0,0,200,800);
-        occuList.setBounds(0,0,200,800);
-        tfStatus.setBounds(10,10,100,30);
-        tfStatus.setText("Idle"); 
-        addrList.setModel(addrModel);
-        occuList.setModel(occuModel);
-        
-        montiorWestPanel.add(new JLabel("Address List:"),BorderLayout.NORTH);
-        montiorWestPanel.add(addrList,BorderLayout.CENTER);
-        
-        
-        monitorEastPanel.add(new JLabel("Occupant List:"),BorderLayout.NORTH);
-        monitorEastPanel.add(occuList,BorderLayout.CENTER);  
-        
-        monitorCentreLeftPanel.add(new JLabel("Predicted Count:"),BorderLayout.NORTH);
-        monitorCentreRightPanel.add(new JLabel("Known Count:"),BorderLayout.NORTH);
-        monitorCentreLeftPanel.add(tfPredCount,BorderLayout.CENTER); 
-        monitorCentreRightPanel.add(tfKnownCount,BorderLayout.CENTER);
-        
-       
-        
-        monitorPanel.setSize(600,400);
-        monitorPanel.setLayout(new BorderLayout());
-        monitorPanel.add(montiorWestPanel,BorderLayout.WEST);
-        monitorPanel.add(b,BorderLayout.SOUTH);
-        monitorPanel.add(monitorCentrePanel);
-        monitorPanel.add(monitorEastPanel,BorderLayout.EAST);
-        monitorPanel.add(tfStatus,BorderLayout.NORTH);
-        
-       
-     
-            
-      class ShellListener implements ActionListener {
-        private ShellWorker sw = null;
+	private void setupMonitorPanel() {
+		b = new JButton("Start");
+		monitorPanel = new JPanel();
+		tfStatus = new JTextField();
+		tfPredCount = new JTextField();
+		tfKnownCount = new JTextField();
+		tfrouterAddress = new JTextField();
+		
+		addrList = new JList<>();
+		occuList = new JList<>();
+		monitorEastPanel = new JPanel(new BorderLayout());
+		montiorWestPanel = new JPanel(new BorderLayout());
+		monitorCentrePanel = new JPanel();
+		monitorSouthPanel = new JPanel(new BorderLayout());
+		monitorCentreLeftPanel = new JPanel(new BorderLayout());
+		monitorCentreRightPanel = new JPanel(new BorderLayout());
 
-        @Override
-        public void actionPerformed(ActionEvent ae) {
-        
-            if (ae.getActionCommand().equals("Start")) 
-            {
-                if (sw == null || sw.isDone()) {
-                    b.setText("Stop");
-                    executing = true;
-        
-                    sw = new ShellWorker(addrModel,occuModel, tfStatus, tfPredCount,tfKnownCount, personStore);
-                    sw.execute();
-        
-                } else {
-                    b.setText("Start");
-                    executing = false;
-                    sw.cancel(true);
-                    }
-                }
-            }
-        }
-       
-        
-        b.addActionListener(new ShellListener());
-        b.setActionCommand("Start");
-        b.setVisible(true);
-        
-         
-        tabbedPane.add("Monitor", monitorPanel);
-        
-    }
+		monitorCentrePanel.add(monitorCentreLeftPanel);
+		monitorCentrePanel.add(monitorCentreRightPanel);
+
+		tfPredCount.setBounds(0, 0, 50, 50);
+		tfKnownCount.setBounds(0, 0, 50, 50);
+		addrList.setBounds(0, 0, 200, 800);
+		occuList.setBounds(0, 0, 200, 800);
+		tfStatus.setBounds(10, 10, 100, 30);
+		tfStatus.setText("Idle");
+		addrList.setModel(addrModel);
+		occuList.setModel(occuModel);
+
+		montiorWestPanel.add(new JLabel("Address List:"), BorderLayout.NORTH);
+		montiorWestPanel.add(addrList, BorderLayout.CENTER);
+
+		monitorEastPanel.add(new JLabel("Occupant List:"), BorderLayout.NORTH);
+		monitorEastPanel.add(occuList, BorderLayout.CENTER);
+
+		monitorCentreLeftPanel.add(new JLabel("Count:"), BorderLayout.NORTH);
+	//	monitorCentreRightPanel.add(new JLabel("Known Count:"), BorderLayout.NORTH);
+		monitorCentreLeftPanel.add(tfPredCount, BorderLayout.CENTER);
+	//	monitorCentreRightPanel.add(tfKnownCount, BorderLayout.CENTER);
+
+		monitorPanel.setSize(600, 400);
+		monitorPanel.setLayout(new BorderLayout());
+		monitorPanel.add(montiorWestPanel, BorderLayout.WEST);
+		monitorSouthPanel.add(b, BorderLayout.EAST);
+		
+		monitorPanel.add(monitorCentrePanel);
+		monitorPanel.add(monitorSouthPanel,BorderLayout.SOUTH);
+		monitorPanel.add(monitorEastPanel, BorderLayout.EAST);
+		monitorPanel.add(tfStatus, BorderLayout.NORTH);
+
+		class ShellListener implements ActionListener {
+			private ShellWorker sw = null;
+
+			@Override
+			public void actionPerformed(ActionEvent ae) {
+
+				if (ae.getActionCommand().equals("Start")) {
+					if (sw == null || sw.isDone()) {
+						b.setText("Stop");
+						executing = true;
+						routerUpdateButton.setEnabled(false);
+						tfrouterAddress.setEnabled(false);
+						sw = new ShellWorker(addrModel, occuModel, tfStatus, tfPredCount, tfKnownCount, personStore,router_mac_address);
+						sw.execute();
+
+					} else {
+						b.setText("Start");
+						executing = false;
+						sw.cancel(true);
+						routerUpdateButton.setEnabled(true);
+						tfrouterAddress.setEnabled(true);
+					}
+				}
+			}
+		}
+
+		b.addActionListener(new ShellListener());
+		b.setActionCommand("Start");
+		b.setVisible(true);
+		setupMonitorUpdateRouterButton();
+	//	monitorSouthPanel.add(routerUpdateButton, BorderLayout.WEST);
+	//	monitorSouthPanel.add(tfrouterAddress, BorderLayout.CENTER);
+		tabbedPane.add("Monitor", monitorPanel);
+
+	}
 
 	/**
-	 *  Sets up the add person panel which is the parent component for the add person tab
+	 * Sets up the add person panel which is the parent component for the add person
+	 * tab
 	 */
 	private void setupAddPersonPanel() {
 		personPanel = new JPanel(new BorderLayout());
@@ -246,7 +257,8 @@ public class Interface {
 	}
 
 	/**
-	 *  Sets up the edit person panel which is the parent component for the edit person tab
+	 * Sets up the edit person panel which is the parent component for the edit
+	 * person tab
 	 */
 	private void setupEditPersonPanel() {
 		editPanel = new JPanel(new BorderLayout());
@@ -298,8 +310,9 @@ public class Interface {
 	}
 
 	/**
-	 * Sets up the sumbit button used on the monitor panel.
-	 * Adds an action listener which creates a new person from the strings found in tfName, tfAddresses and tfPrimaryAddress
+	 * Sets up the sumbit button used on the monitor panel. Adds an action listener
+	 * which creates a new person from the strings found in tfName, tfAddresses and
+	 * tfPrimaryAddress
 	 */
 	private void setupSubmitButton() {
 
@@ -318,8 +331,9 @@ public class Interface {
 	}
 
 	/**
-	 * Sets up the editDeletePersonButtin used on the edit person panel.
-	 * Adds an action listener which removes the correct person from both the PersonStore and the editPersonListModel
+	 * Sets up the editDeletePersonButtin used on the edit person panel. Adds an
+	 * action listener which removes the correct person from both the PersonStore
+	 * and the editPersonListModel
 	 */
 	private void setupEditDeletePersonButton() {
 
@@ -339,8 +353,9 @@ public class Interface {
 	}
 
 	/**
-	 *  Sets up the editDeletePersonButtin used on the edit person panel.
-	 * Adds an action listener which removes the correct address from  the Person and the editAddressListModel
+	 * Sets up the editDeletePersonButtin used on the edit person panel. Adds an
+	 * action listener which removes the correct address from the Person and the
+	 * editAddressListModel
 	 */
 	private void setupEditDeleteAddressButton() {
 
@@ -362,11 +377,12 @@ public class Interface {
 	}
 
 	/**
-	 * Sets up the update person.
-	 * Adds an action listener which adds the addresses to the person selected in the editPersonList
+	 * Sets up the update person. Adds an action listener which adds the addresses
+	 * to the person selected in the editPersonList
 	 */
 	private void setupEditUpdateButton() {
 		editUpdateButton = new JButton("Update Person");
+		editUpdateButton.setEnabled(false);
 		editUpdateButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -390,10 +406,10 @@ public class Interface {
 	}
 
 	/**
-	 * Adds a ListSelection listener to the editAddressList which simply enables/disables buttons based on if an element is 
-	 * selected or not.
+	 * Adds a ListSelection listener to the editAddressList which simply
+	 * enables/disables buttons based on if an element is selected or not.
 	 */
-	
+
 	private void editAddressListSelectionListener() {
 
 		editAddressList.addListSelectionListener(new ListSelectionListener() {
@@ -417,9 +433,10 @@ public class Interface {
 	}
 
 	/**
-	 * Adds a ListSelection listener to the editPersonList which simply enables/disables buttons based on if an element is 
-	 * selected or not.
-	 * If a person is selected it also updates the editAddressListModel with the addresses of the person selected.
+	 * Adds a ListSelection listener to the editPersonList which simply
+	 * enables/disables buttons based on if an element is selected or not. If a
+	 * person is selected it also updates the editAddressListModel with the
+	 * addresses of the person selected.
 	 */
 	private void editPersonListSelectionListener() {
 		editPersonList.addListSelectionListener(new ListSelectionListener() {
@@ -432,10 +449,12 @@ public class Interface {
 						// No selection, disable fire button.
 						editDeletePersonButton.setEnabled(false);
 						editDeleteAddressButton.setEnabled(false);
+						editUpdateButton.setEnabled(false);
 
 					} else {
 						// Selection, enable the fire button.
 						editDeletePersonButton.setEnabled(true);
+						editUpdateButton.setEnabled(true);
 						editAddressListModel.clear();
 						for (String adr : personStore.getPerson(personIndex).getAddresses()) {
 							editAddressListModel.addElement(adr);
@@ -445,5 +464,44 @@ public class Interface {
 				}
 			}
 		});
+	}
+
+	public void updateEditPersonList() {
+
+		editPersonListModel.clear();
+		for (Person p : personStore.getPersonList())
+			editPersonListModel.addElement(p);
+
+	}
+	
+	public void setupCloseFrameListener() {
+		f.addWindowListener(new java.awt.event.WindowAdapter() {
+		    @Override
+		    public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+		    	personSerialiser.save(personStore);
+		            System.exit(0);
+		        
+		    }
+		});
+		
+		
+		
+	
+	}
+	
+	private void setupMonitorUpdateRouterButton() {
+
+		routerUpdateButton = new JButton("Update Address");
+		routerUpdateButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				router_mac_address = tfrouterAddress.getText();
+				ObjectSerialiser<String> oSerialiser = new ObjectSerialiser<String>(routerAddressPath);
+				oSerialiser.save(router_mac_address);
+				
+			}
+		});
+		
+	
 	}
 }

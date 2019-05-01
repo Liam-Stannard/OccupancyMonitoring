@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.*;
@@ -33,28 +35,29 @@ public class ShellWorker extends SwingWorker<Set<String>, Set<String>> {
 	private Set<String> macAddresses;
 	private DefaultListModel<String> copyAddrModel;
 	private DefaultListModel<String> copyOccuModel;
-	private int predOccupancyCount = 0;
-	private int knownOccupnacyCount = 0;
-	private PersonStore personStoreCopy;
+	private int predictedOccupancyCount = 0;
+	private int knownOccupancyCount = 0;
+	private int presentAddressCount = 0;
+	private PersonStore personStore;
 	private int round = 0;
 	
-	private final String ROUTER_MAC_ADDRESS = "48:d3:43:3f:7b:08";
+	private final String router_mac_address;
 
 	/**
 	 * Constructor for objects of class ShellWorker
 	 */
 	public ShellWorker(DefaultListModel<String> addrModel, DefaultListModel<String> occuModel, JTextField tStatus,
-			JTextField tPredCount, JTextField tKnownCount, PersonStore p) {
+			JTextField tPredCount, JTextField tKnownCount, PersonStore p,String router_mac_address) {
 		processBuilder = new ProcessBuilder();
 
-		setCommand();
-
+		
+		this.router_mac_address = router_mac_address;
 		copyOccuModel = occuModel;
 		copyAddrModel = addrModel;
 		tfStatus = tStatus;
 		tfPredCount = tPredCount;
 		tfKnownCount = tKnownCount;
-		personStoreCopy = p;
+		personStore = p;
 
 	}
 
@@ -64,30 +67,28 @@ public class ShellWorker extends SwingWorker<Set<String>, Set<String>> {
 			round ++;
 			System.out.println("Start - " + round);
 			try {
-				setCommand();
-				process = processBuilder.start();
-				//processBuilder.command("res/ping_windows10.bat");
-				//Process p = processBuilder.start();
-				
+				runCommand();
+		
 				macAddresses = new HashSet<String>();
 				File log = new File("log");
 				BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 				output = new StringBuilder();
 				tfStatus.setText("Running");
-				
-				
-				
-
 				String line;
 				output.append("MAC ADDRESSES: \n");
 				while ((line = reader.readLine()) != null ) {
 				System.out.println(line);
 					if(!macAddresses.contains(line)) {
-					System.out.println(line + "\n");
-					macAddresses.add(line);}
+					System.out.println(line);
+					macAddresses.add(line);
+					copyAddrModel.addElement(line);
+					}
 				}
-				macAddresses.remove(ROUTER_MAC_ADDRESS);
+				macAddresses.remove(router_mac_address);
 				macAddresses.remove("eth.src");
+				System.out.println("List:");
+				for(String string : macAddresses)
+					System.out.println(string);
 				int exitVal = process.waitFor();
 				if (exitVal == 0) {
 					System.out.println("Success!");
@@ -128,41 +129,61 @@ public class ShellWorker extends SwingWorker<Set<String>, Set<String>> {
 
 	public void updateGUI() {
 		try {
-			predOccupancyCount = 0;
-			knownOccupnacyCount = 0;
+			PersonStore peoplePresent = new PersonStore();
+			predictedOccupancyCount = 0;
+			knownOccupancyCount = 0;
+			presentAddressCount = 0;
 			copyAddrModel.clear();
 			copyOccuModel.clear();
-			for (String str : macAddresses) {
-				copyAddrModel.addElement(str);
-				System.out.println("Addresses:\n" + str + "\n");
-				for (Person p : personStoreCopy.getPersonList()) {
-					System.out.print(p);
-					boolean present = false;
-					for (String addr : p.getAddresses()) {
+			
+			System.out.println("Addresses:");
+			for(String adr : macAddresses)
+				System.out.println(adr);
+			
+			for (String str : macAddresses) 
+			{
+				System.out.println("Current Address:" + str);
+				for (Person p : personStore.getPersonList())
+				{
+					System.out.println("---------------------------------");
+					System.out.println(p);
+					
+					for (String addr : p.getAddresses()) 
+					{
+						System.out.println(addr);
 						if (addr.equals(str)) 
 						{
-							if(str.equals(p.getPrimaryAddress()))
+							if (addr.equals(p.getPrimaryAddress())) 
 							{
-								System.out.print(" - Present\n");
-								present = true;
+								
+								copyOccuModel.addElement(p.getName());
+								knownOccupancyCount++;
+								peoplePresent.addPerson(p);
 							}
 							
-							macAddresses.remove(str);
+							presentAddressCount++;
 						}
 					}
-					if(present)
-					{
-						knownOccupnacyCount++;
-						copyOccuModel.addElement(p.getName());
-					}
-
+					
+					System.out.println("---------------------------------");
 				}
 
 			}
-			predOccupancyCount = macAddresses.size();
+			predictedOccupancyCount = macAddresses.size() - presentAddressCount;
+			System.out.println("\nAddresses:");
+			for(String adr : macAddresses)
+				System.out.println(adr);
+			
+			System.out.println("People Present:");
+			for (Person p : peoplePresent.getPersonList())
+				System.out.println(p);
+			
+			System.out.println("Known: " + knownOccupancyCount);
+			System.out.println("Pred: " + predictedOccupancyCount);
 
-			tfPredCount.setText(Integer.toString(predOccupancyCount));
-			tfKnownCount.setText(Integer.toString(knownOccupnacyCount));
+
+			tfPredCount.setText(Integer.toString(predictedOccupancyCount));
+			tfKnownCount.setText(Integer.toString(knownOccupancyCount));
 		} catch (Exception ignore) {
 		}
 	}
@@ -172,16 +193,22 @@ public class ShellWorker extends SwingWorker<Set<String>, Set<String>> {
 		return System.getProperty("os.name");
 	}
 
-	private void setCommand() {
-
+	private void runCommand() throws IOException {
+		Process p;
 		switch (getOperatingSystem()) {
 		case "Windows 10":
 			
 			processBuilder.command("res/run.bat");
+			process = processBuilder.start();
+			processBuilder.command("res/ping_windows10.bat");
+			p = processBuilder.start();
 			break;
-		case "Raspbean":
-			;
-			processBuilder.command(shellPath + "res/run.sh");
+		case "Raspbian":
+
+			processBuilder.command("res/run.bat");
+			process = processBuilder.start();
+			processBuilder.command("res/ping_Raspbian.bat");
+			 p = processBuilder.start();
 			break;
 
 			
@@ -196,13 +223,21 @@ public class ShellWorker extends SwingWorker<Set<String>, Set<String>> {
 	{
 		FileWriter fileWriter;
 		try {
-			fileWriter = new FileWriter("res/log.txt",true);
-			PrintWriter printWriter = new PrintWriter(fileWriter);
+			File logDir = new File("logs");
+			if(!logDir.exists())
+				logDir.mkdirs();
+				
+				
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 			Date date = Calendar.getInstance().getTime();
+			System.out.println("log"+ sdf.format(date).toString()+".txt");
+			fileWriter = new FileWriter("logs/log_"+sdf.format(date).toString()+".txt",true);
+			PrintWriter printWriter = new PrintWriter(fileWriter);
+			
 			String dateStr = DateFormat.getDateTimeInstance().format(date);
 			System.out.println("WRITE");
 			printWriter.printf("%s%n",dateStr );
-			printWriter.printf("%s %s%n","Known: " +Integer.toString(knownOccupnacyCount),"Predicted: "+  Integer.toString(predOccupancyCount) );
+			printWriter.printf("%s %s%n","Known: " +Integer.toString(knownOccupancyCount),"Predicted: "+  Integer.toString(predictedOccupancyCount) );
 			for(Object person : copyOccuModel.toArray())
 			{
 				printWriter.printf("%s%n",person.toString());

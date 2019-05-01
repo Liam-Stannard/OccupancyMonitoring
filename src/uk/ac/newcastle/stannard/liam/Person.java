@@ -1,5 +1,6 @@
 package uk.ac.newcastle.stannard.liam;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
@@ -10,9 +11,13 @@ import java.util.ArrayList;
  * addresses - A list of the addresses mapped to this person
  *
  */
-public class Person { 
+public class Person implements Serializable { 
 	
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5698226248243982630L;
 	String name;
 	String primaryAddress;
 	ArrayList<String> addresses = new ArrayList<String>();
@@ -123,11 +128,10 @@ public class Person {
 	 */
 	@Override
 	public String toString() {
-		String toReturnString = name + ":\n";
-		/*
-		 * toReturnString += "\t" + primaryAddress + "\n"; for (String str : addresses)
-		 * { toReturnString += "\t" + str + "\n"; }
-		 */
+		String toReturnString = name;
+		
+		 
+		 
 		return toReturnString;
 	}
 
