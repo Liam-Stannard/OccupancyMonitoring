@@ -23,9 +23,11 @@ import javax.swing.*;
 
 public class Interface {
 
+	private final boolean DEMO_MODE = true;
 	private JFrame f;
 	private JTabbedPane tabbedPane;
 	PersonStore personStore;
+	PersonStore demoStore = new PersonStore();
 	ObjectSerialiser<PersonStore> personSerialiser;
 	private final String routerAddressPath = "res/routerAddress";
 	private final String personStorePath = "res/personStore";
@@ -100,6 +102,20 @@ public class Interface {
 		}else {
 			personStore = new PersonStore();
 		}
+		if(DEMO_MODE)
+		{
+			demoStore.addPerson(new Person("bob", "12:4a:6c:3b:7d:4d"));
+			demoStore.addPerson(new Person("mary", "15:4a:6c:3b:7d:4d"));
+			demoStore.addPerson(new Person("alan", "16:4a:6c:3b:7d:4d"));
+			demoStore.addPerson(new Person("sue", "17:4a:6c:3b:7d:4d"));
+			demoStore.addPerson(new Person("charlie", "18:4a:6c:3b:7d:4d"));
+			demoStore.addPerson(new Person("joe", "19:4a:6c:3b:7d:4d"));
+			demoStore.addPerson(new Person("saskia", "11:4a:6c:3b:7d:4d"));
+			demoStore.addPerson(new Person("liam", "12:43:6c:3b:7d:4d"));
+			demoStore.addPerson(new Person("max", "12:4a:63:3b:7d:4d"));
+			demoStore.addPerson(new Person("paddy", "12:4a:6a:3b:7d:4d"));
+			personStore = demoStore;
+		}
 		
 		setup();
 	}
@@ -137,7 +153,7 @@ public class Interface {
 		tfPredCount = new JTextField();
 		tfKnownCount = new JTextField();
 		tfrouterAddress = new JTextField();
-		
+		tfrouterAddress.setText(router_mac_address);
 		addrList = new JList<>();
 		occuList = new JList<>();
 		monitorEastPanel = new JPanel(new BorderLayout());
@@ -165,10 +181,10 @@ public class Interface {
 		monitorEastPanel.add(new JLabel("Occupant List:"), BorderLayout.NORTH);
 		monitorEastPanel.add(occuList, BorderLayout.CENTER);
 
-		monitorCentreLeftPanel.add(new JLabel("Count:"), BorderLayout.NORTH);
-	//	monitorCentreRightPanel.add(new JLabel("Known Count:"), BorderLayout.NORTH);
+		monitorCentreLeftPanel.add(new JLabel("Predicted Count:"), BorderLayout.NORTH);
+		monitorCentreRightPanel.add(new JLabel("Known Count:"), BorderLayout.NORTH);
 		monitorCentreLeftPanel.add(tfPredCount, BorderLayout.CENTER);
-	//	monitorCentreRightPanel.add(tfKnownCount, BorderLayout.CENTER);
+		monitorCentreRightPanel.add(tfKnownCount, BorderLayout.CENTER);
 
 		monitorPanel.setSize(600, 400);
 		monitorPanel.setLayout(new BorderLayout());
@@ -182,7 +198,7 @@ public class Interface {
 
 		class ShellListener implements ActionListener {
 			private ShellWorker sw = null;
-
+			private ShellWorkerDEMO swdDemo;
 			@Override
 			public void actionPerformed(ActionEvent ae) {
 
@@ -192,13 +208,30 @@ public class Interface {
 						executing = true;
 						routerUpdateButton.setEnabled(false);
 						tfrouterAddress.setEnabled(false);
-						sw = new ShellWorker(addrModel, occuModel, tfStatus, tfPredCount, tfKnownCount, personStore,router_mac_address);
-						sw.execute();
+						if(DEMO_MODE)
+						{
+							swdDemo = new ShellWorkerDEMO(addrModel, occuModel, tfStatus, tfPredCount, tfKnownCount, personStore,router_mac_address);
+							swdDemo.execute();
+						}
+						else 
+						{
+							sw = new ShellWorker(addrModel, occuModel, tfStatus, tfPredCount, tfKnownCount, personStore,router_mac_address);
+							sw.execute();
+						}
+					
+						
 
 					} else {
 						b.setText("Start");
 						executing = false;
-						sw.cancel(true);
+						if(DEMO_MODE)
+						{
+							swdDemo.cancel(true);
+						}
+						else {
+							sw.cancel(true);
+						}
+						
 						routerUpdateButton.setEnabled(true);
 						tfrouterAddress.setEnabled(true);
 					}
@@ -210,8 +243,8 @@ public class Interface {
 		b.setActionCommand("Start");
 		b.setVisible(true);
 		setupMonitorUpdateRouterButton();
-	//	monitorSouthPanel.add(routerUpdateButton, BorderLayout.WEST);
-	//	monitorSouthPanel.add(tfrouterAddress, BorderLayout.CENTER);
+		monitorSouthPanel.add(routerUpdateButton, BorderLayout.WEST);
+		monitorSouthPanel.add(tfrouterAddress, BorderLayout.CENTER);
 		tabbedPane.add("Monitor", monitorPanel);
 
 	}
@@ -229,7 +262,9 @@ public class Interface {
 		tfName = new JTextField();
 		tfPrimaryAddress = new JTextField();
 		tfAddresses = new JTextField();
-
+		tfName.setText("Name");
+		tfAddresses.setText("Insert Mac Addresses here in format xx:xx:xx:xx:xx:xx,yy:yy:yy:yy:yy:yy");
+		tfPrimaryAddress.setText("Insert Primary Mac Addresses here in format xx:xx:xx:xx:xx:xx");
 		nameLabel = new JLabel("Name:");
 		addressesLabel = new JLabel("Addresses:");
 		primaryAddressLabel = new JLabel("Primary Address:");
@@ -274,6 +309,7 @@ public class Interface {
 		editPersonListSelectionListener();
 
 		editAddressesTf = new JTextField();
+		editAddressesTf.setText("Add addition addresses here in the format xx:xx:xx:xx:xx:xx, yy:yy:yy:yy:yy:yy");
 		nameLabel = new JLabel("Name:");
 
 		setupEditDeletePersonButton();
